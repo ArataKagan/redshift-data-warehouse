@@ -1,9 +1,13 @@
 import configparser
 
-
 # CONFIG
 config = configparser.ConfigParser()
 config.read('dwh.cfg')
+
+LOG_DATA = config.get("S3", "LOG_DATA")
+LOG_JSONPATH = config.get("S3", "LOG_JSONPATH")
+SONG_DATA = config.get("S3", "SONG_DATA")
+ARN = config.get("IAM_ROLE", "ARN")
 
 # DROP TABLES
 
@@ -115,26 +119,82 @@ time_table_create = ("""
 # STAGING TABLES
 
 staging_events_copy = ("""
-""").format()
+ COPY staging_events FROM {}
+    credentials 'aws_iam_role={}'
+    format as json {}
+    STATUPDATE ON
+    region 'us-west-2';
+""").format(LOG_DATA, ARN, LOG_JSONPATH)
 
 staging_songs_copy = ("""
-""").format()
+COPY staging_songs FROM {}
+    credentials 'aws_iam_role={}'
+    format as json 'auto'
+    ACCEPTINVCHARS AS '^'
+    STATUPDATE ON
+    region 'us-west-2';
+""").format(SONG_DATA, ARN)
 
 # FINAL TABLES
 
 songplay_table_insert = ("""
+INSERT INTO songplays (start_time, user_id, level, song_id, artist_id, session_id, location, user_agent) 
+        SELECT DISTINCT to_timestamp(to_char(se.ts, '9999-99-99 99:99:99'),'YYYY-MM-DD HH24:MI:SS'),
+                        se.userId AS user_id, 
+                        se.level AS level, 
+                        ss.song_id AS song_id, 
+                        ss.artist_id AS artist_id, 
+                        se.sessionId AS session_id, 
+                        se.location AS location, 
+                        se.userAgent AS user_agent
+        FROM staging_events se 
+        INNER JOIN staging_songs ss 
+            ON se.song = ss.title AND se.artist = ss.artist_name
+        WHERE se.page = 'NextSong';
 """)
 
 user_table_insert = ("""
+INSERT INTO users (user_id, first_name, last_name, gender, level)
+    SELECT  DISTINCT se.userId          AS user_id,
+            se.firstName                AS first_name,
+            se.lastName                 AS last_name,
+            se.gender                   AS gender,
+            se.level                    AS level
+    FROM staging_events AS se
+    WHERE se.page = 'NextSong';
 """)
 
 song_table_insert = ("""
+INSERT INTO songs (song_id, title, artist_id, year, duration)
+    SELECT  DISTINCT ss.song_id         AS song_id,
+            ss.title                    AS title,
+            ss.artist_id                AS artist_id,
+            ss.year                     AS year,
+            ss.duration                 AS duration
+    FROM staging_songs AS ss;
 """)
 
 artist_table_insert = ("""
+INSERT INTO artists (artist_id, name, location, latitude, longitude)
+    SELECT  DISTINCT ss.artist_id       AS artist_id,
+            ss.artist_name              AS name,
+            ss.artist_location          AS location,
+            ss.artist_latitude          AS latitude,
+            ss.artist_longitude         AS longitude
+    FROM staging_songs AS ss;
 """)
 
 time_table_insert = ("""
+INSERT INTO times (start_time, hour, day, week, month, year, weekday)
+    SELECT  DISTINCT to_timestamp(to_char(se.ts, '9999-99-99 99:99:99'),'YYYY-MM-DD HH24:MI:SS') AS start_time,
+            EXTRACT(hour FROM start_time)    AS hour,
+            EXTRACT(day FROM start_time)     AS day,
+            EXTRACT(week FROM start_time)    AS week,
+            EXTRACT(month FROM start_time)   AS month,
+            EXTRACT(year FROM start_time)    AS year,
+            EXTRACT(week FROM start_time)    AS weekday
+    FROM    staging_events                   AS se
+    WHERE se.page = 'NextSong';
 """)
 
 # QUERY LISTS
