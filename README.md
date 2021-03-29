@@ -41,6 +41,7 @@ SONG_DATA='s3://udacity-dend/song_data'
 - sql_queries.py : Contains all sql queries
 - create_tables.py : Contains CREATE and DROP functions 
 
+## Database Schema
 
 ### Staging Table:
 **Staging Song Table**
