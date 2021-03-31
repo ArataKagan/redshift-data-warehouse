@@ -24,21 +24,21 @@ time_table_drop = "DROP TABLE IF EXISTS time"
 staging_events_table_create= ("""
    CREATE TABLE IF NOT EXISTS staging_events (
        artist varchar,
-       auth varchar  not null,
+       auth varchar,
        firstName varchar,
        gender char(1),
-       itemInSession int not null,
+       itemInSession int,
        lastName varchar,
        length numeric,
-       level varchar not null,
+       level varchar,
        location varchar,
-       method varchar not null,
-       page varchar not null,
+       method varchar,
+       page varchar,
        registration numeric,
-       sessionId int not null,
+       sessionId int,
        song varchar,
-       status int not null,
-       ts numeric not null,
+       status int,
+       ts numeric,
        userAgent varchar,
        userId int
    )
@@ -47,16 +47,16 @@ staging_events_table_create= ("""
 
 staging_songs_table_create = ("""
     CREATE TABLE IF NOT EXISTS staging_songs (
-        num_songs int not null,
-        artist_id char(20) not null,
+        num_songs int,
+        artist_id char(20),
         artist_latitude varchar,
         artist_longitude varchar,
         artist_location varchar,
-        artist_name varchar not null,
-        song_id char(20) not null,
-        title varchar not null,
-        duration numeric not null,
-        year int not null
+        artist_name varchar,
+        song_id char(20),
+        title varchar,
+        duration numeric,
+        year int 
     )
 """)
 
